@@ -1,5 +1,4 @@
 /* 
-
 Can plant conversions and abatement technologies prevent asset stranding in the power sector?
 Yangsiyu Lu, Francois Cohen, Stephen Smith, Alexander Pfeiffer  
 Last updated: 2021-07-05
@@ -7,7 +6,7 @@ Last updated: 2021-07-05
 Data input:
 1) Plant-level data:
 Power plant data are compiled from:
-	(a) Global Coal Plant Tracker, publicly available at: https://endcoal.org/global-coal-plant-tracker/ ; 
+	(a) Global Coal Plant Tracker, publicly available at: https://endcoal.org/global-coal-plant-tracker/; 
 	(b) World Electric Power Plants (WEPP) database, purchased from S&P Global Market Intelligence; 
 	(c) WRI’s global database of power plants, publicly available at: https://datasets.wri.org/dataset/globalpowerplantdatabase.  
 
@@ -18,14 +17,15 @@ As part of power plant data (WEPP) are license protected, we are not able to sha
 	b) IPCC SR1.5 scenarios data, publicly available at: https://data.ene.iiasa.ac.at/iamc-1.5c-explorer/
 	c) IEA Sustainable Development Scenarios regarding CCS, publicly available at: https://www.iea.org/reports/ccus-in-clean-energy-transitions/ccus-in-the-transition-to-net-zero-emissions
 		
-	
-The purpose of this file is to facilitate the reproducibility of this research. Scripts show the main steps in the analysis.
+The purpose of this file is to facilitate the reproducibility of this research. Scripts show the analysis code used to produce results for main figures.
 */
 
 ********************************************************************************
 *************    Estimate electricity generation between 2021 and 2100    ******************
 ********************************************************************************
 	use "POWERPLANT.dta", clear //this do file starts from POWERPLANT.dta, which already dealt with power plant raw dataset.
+	
+	* Used for analysis in Figure 1
 				
 	gen max_gen = mw * 24 * 365 
 	label var max_gen "Max annual generation [mWh/year]"
@@ -68,13 +68,13 @@ The purpose of this file is to facilitate the reproducibility of this research. 
 
 
 ********************************************************************************
-*************    Estimate stranded assets in climate scenarios ******************
+*************    Estimate stranded assets in climate scenario  ******************
 ********************************************************************************
 
 *---- SA0: not consider plant conversions, used for analysis in Figure 2 and Figure 4 
 
 * Combine climate scenarios and power plant dataset
-	use "$use/AMPERE.dta", clear //AMPERE.dta is the dta file contains climate scenarios
+	use "AMPERE.dta", clear //AMPERE.dta is the dta file that contains climate scenarios
 	sort region year
 	merge m:1 region year using "$use/plant_database_ready.dta", keepusing(COAL* GAS* OIL*) 
 	
@@ -109,41 +109,18 @@ The purpose of this file is to facilitate the reproducibility of this research. 
 	gen pathway_id=model+"_"+scenario+"_"+region //generate unique id for each obs	
 	sort pathway_id
 
-
-	bysort pathway_id: egen sum_COAL_SA0_current=sum(COAL_SA0_current) 
-	bysort pathway_id: egen sum_GAS_SA0_current=sum(GAS_SA0_current)
-	bysort pathway_id: egen sum_OIL_SA0_current=sum(OIL_SA0_current) 
 	bysort pathway_id: egen sum_ALL_SA0_current=sum(ALL_SA0=_current) 
-
-	bysort pathway_id: egen sum_COAL_SA0_pipeline=sum(COAL_SA0_pipeline) 
-	bysort pathway_id: egen sum_GAS_SA0_pipeline=sum(GAS_SA0_pipeline)
-	bysort pathway_id: egen sum_OIL_SA0_pipeline=sum(OIL_SA0_pipeline) 
 	bysort pathway_id: egen sum_ALL_SA0_pipeline=sum(ALL_SA0_pipeline) 
-
-	bysort pathway_id: egen sum_COAL_SA0=sum(COAL_SA) 
-	bysort pathway_id: egen sum_GAS_SA0=sum(GAS_SA0)
-	bysort pathway_id: egen sum_OIL_SA0=sum(OIL_SA0) 
 	bysort pathway_id: egen sum_ALL_SA0=sum(ALL_SA0) 
 
 	gen ALL_gen=COAL_gen+GAS_gen+OIL_gen
 	gen ALL_gen_current=COAL_gen_current+GAS_gen_current+OIL_gen_current
 	gen ALL_gen_pipeline=COAL_gen_pipeline+GAS_gen_pipeline+OIL_gen_pipeline
 
-	bysort pathway_id: egen sum_COAL_gen=sum(COAL_gen) 
-	bysort pathway_id: egen sum_GAS_gen=sum(GAS_gen)
-	bysort pathway_id: egen sum_OIL_gen=sum(OIL_gen) 
 	bysort pathway_id: egen sum_ALL_gen=sum(ALL_gen) 
-
 	bysort pathway_id: egen sum_ALL_gen_current=sum(ALL_gen_current) 
-	bysort pathway_id: egen sum_GAS_gen_current=sum(GAS_gen_current)
-	bysort pathway_id: egen sum_OIL_gen_current=sum(OIL_gen_current) 
-	bysort pathway_id: egen sum_COAL_gen_current=sum(COAL_gen_current) 
-
-	bysort pathway_id: egen sum_ALL_gen_pipeline=sum(ALL_gen_pipeline) 
-	bysort pathway_id: egen sum_GAS_gen_pipeline=sum(GAS_gen_pipeline)
-	bysort pathway_id: egen sum_OIL_gen_pipeline=sum(OIL_gen_pipeline) 
-	bysort pathway_id: egen sum_COAL_gen_pipeline=sum(COAL_gen_pipeline) 
-
+	bysort pathway_id: egen sum_ALL_gen_pipeline=sum(ALL_gen_pipeline)
+	
 	collapse (mean) sum_*_SA* sum_*_gen* , by (model region scenario) 
 	
 	save "Stranded_assets_ready.dta", replace
@@ -152,10 +129,10 @@ The purpose of this file is to facilitate the reproducibility of this research. 
 
 	*---- SA1: Coal-to-gas (used in Fig. 3a)
 		
-	use "$use/AMPERE.dta", clear
+	use "AMPERE.dta", clear
 	set more off
 	sort region year
-	merge m:1 region year using "$use/plant_database_gas_retrofit.dta", keepusing(COAL* GAS* OIL*) gen(matched) // "$use/plant_database_gas_retrofit.dta" is the power plant data prepared for gas retrofit, classified power generation into gas-suitable and non-suitable
+	merge m:1 region year using "plant_database_gas_retrofit.dta", keepusing(COAL* GAS* OIL*) gen(matched) // "$use/plant_database_gas_retrofit.dta" is the power plant data prepared for gas retrofit, classified power generation into gas-suitable and non-suitable
 
 * OIL: calculate the same way as SA0
 	gen OIL_SA1 =(OIL_gen  - OIL_AMPEREsec_woCCS) if OIL_gen >=OIL_AMPEREsec_woCCS
@@ -175,8 +152,8 @@ The purpose of this file is to facilitate the reproducibility of this research. 
 	gen COAL_conversion_`re'=COAL_gen1*`re'/100 if GAS_AMPEREsec_extra >COAL_gen1*`re'/100   //	suffix "gen1" stands for retrofit suitable, "gen0" stands for retrofit non-suitable
 	replace COAL_conversion_`re'=GAS_AMPEREsec_extra  if GAS_AMPEREsec_extra <=COAL_gen1*`re'/100
 
-	gen COAL_SA1 _`re'=COAL_gen -COAL_conversion_`re'-COAL_AMPEREsec_woCCS if COAL_gen -COAL_conversion_`re'-COAL_AMPEREsec_woCCS>0
-	replace COAL_SA1 _`re'=0 if COAL_gen -COAL_conversion_`re'-COAL_AMPEREsec_woCCS<=0
+	gen COAL_SA1_`re'=COAL_gen -COAL_conversion_`re'-COAL_AMPEREsec_woCCS if COAL_gen -COAL_conversion_`re'-COAL_AMPEREsec_woCCS>0
+	replace COAL_SA1_`re'=0 if COAL_gen -COAL_conversion_`re'-COAL_AMPEREsec_woCCS<=0
 
 * Generate all fossil fuel stranded assets annually 
 	gen ALL_SA1_`re'=COAL_SA1_`re'+GAS_SA1+OIL_SA1 
@@ -187,17 +164,17 @@ The purpose of this file is to facilitate the reproducibility of this research. 
 
 	*---- SA2: CCS without biomass (used in Fig. 3b)
 	
-	use "$use/AMPERE.dta", clear
+	use "AMPERE.dta", clear
 	set more off
 	sort region year
-	merge m:1 region year using "$use/plant_database_CCS_retrofit.dta", keepusing(COAL* GAS* OIL*) gen(matched) //"$use/plant_database_CCS_retrofit.dta" is the power plant data prepared for CCS retrofit, classified power generation into CCS-suitable and non-suitable
+	merge m:1 region year using "plant_database_CCS_retrofit.dta", keepusing(COAL* GAS* OIL*) gen(matched) //"$use/plant_database_CCS_retrofit.dta" is the power plant data prepared for CCS retrofit, classified power generation into CCS-suitable and non-suitable
 
 	local retrofit="0 50 100 " // retrofit rate	
 	local FFs="COAL GAS OIL " // retrofit rate	
 
 	foreach re of local retrofit{
 	foreach x of local FFs {
-		*get the conversion amount: should be smaller than convert suitable plants
+*  Get the amount that could be converted
 	gen `x'_conversion_`re'=`x'_gen1*`re'/100 if `x'_AMPEREsec_wCCS>=`x'_gen1*`re'/100  //	suffix "gen1" stands for retrofit suitable, "gen0" stands for retrofit non-suitable
 	replace  `x'_conversion_`re'=`x'_AMPEREsec_wCC if `x'_AMPEREsec_wCCS<`x'_gen1*`re'/100 
 	gen `x'_SA2_`re'=(`x'_gen1+ `x'_gen0- `x'_conversion_`re'-`x'_AMPEREsec_woCCS) if (`x'_gen1+ `x'_gen0- `x'_conversion_`re'-`x'_AMPEREsec_woCCS)>0
@@ -213,10 +190,10 @@ The purpose of this file is to facilitate the reproducibility of this research. 
 
 	*---- SA3: CCS with biomass cofiring, used in Fig.3c & 3d
 	
-	use "$use/AMPERE_FF.dta", clear
+	use "AMPERE_FF.dta", clear
 	set more off
 	sort region year
-	merge m:1 region year using "$use/plant_database_CCS_retrofit.dta", keepusing(COAL* GAS* OIL* BIO*) gen(matched) //
+	merge m:1 region year using "plant_database_CCS_retrofit.dta", keepusing(COAL* GAS* OIL* BIO*) gen(matched) //
 
 * GAS and OIL: assume same percent of CCS retrofit
 	global retrofit" "0" "50" "100" "
@@ -231,36 +208,28 @@ The purpose of this file is to facilitate the reproducibility of this research. 
 	}
 	}
 * COAL:
-* Calculate how much Biomass without CCS can be allowed
-	gen BIO_AMPEREsec_extra _woCCS=BIO_AMPEREsec_woCCS-BIO_gen  if BIO_AMPEREsec_woCCS-BIO_gen  >0
-	replace BIO_AMPEREsec_extra =0 if BIO_AMPEREsec_woCCS-BIO_gen <=0
-
 	global retrofit" "0" "50" "100" "
 	global cofiring "0 20 50 " // co-firing rate
-
-	gen x2=BIO_AMPEREsec_wCCS+COAL_AMPEREsec_wCCS
-		
+* How much coal is CCS converted?
+	gen x2=BIO_AMPEREsec_wCCS+COAL_AMPEREsec_wCCS		
 	foreach re in $retrofit	{
 	foreach co in $cofiring	{
 	gen x1_`re'_`co'=COAL_gen1*(`re'/100) 
 	gen x3_`re'_`co'=COAL_AMPEREsec_wCCS/(100-`co')*100
 	egen COAL_converted_wCCS`re'_`co'=rmin(x1_`re'_`co' x2 x3_`re'_`co')
 * How much coal is not converted?
-	gen COAL_nonconverted_`re'_`co'=COAL_gen -COAL_converted_wCCS`re'_`co'
-* How much biomass could co-fire in coal non CCS plants?
+	gen COAL_nonconverted_`re'_`co'=COAL_gen-COAL_converted_wCCS`re'_`co'
+* How much biomass could co-fire in non CCS-converted coal plants?
+	gen BIO_AMPEREsec_extra=BIO_AMPEREsec_woCCS-BIO_gen  if BIO_AMPEREsec_woCCS-BIO_gen >0
+	replace BIO_AMPEREsec_extra =0 if BIO_AMPEREsec_woCCS-BIO_gen <=0
 	gen BIOMASS_cofire_nc_`re'_`co'=COAL_nonconverted_`re'_`co'*(`co'/100) if COAL_nonconverted_`re'_`co'*(`co'/100)<=BIO_AMPEREsec_extra 
 	replace BIOMASS_cofire_nc_`re'_`co'=BIO_AMPEREsec_extra  if COAL_nonconverted_`re'_`co'*(`co'/100)>BIO_AMPEREsec_extra  
-* How much is actual biomass co-fring ratio?
-	gen BIOMASS_cofire_wCCS`re'_`co'=COAL_converted_wCCS`re'_`co'-COAL_conversion_`re'
-	gen cofire_ratio_wCCS`re'_`co'=BIOMASS_cofire_wCCS`re'_`co'/ COAL_converted_wCCS`re'_`co'
-	gen cofire_ratio_woCCS`re'_`co'=BIOMASS_cofire_nc_`re'_`co'/COAL_nonconverted_`re'_`co'
-
 * Coal stranded assets
-	gen COAL_SA3 _`re'_`co'=COAL_gen -COAL_converted_wCCS`re'_`co'-BIOMASS_cofire_nc_`re'_`co'-COAL_AMPEREsec_woCCS if COAL_gen -COAL_converted_wCCS`re'_`co'-BIOMASS_cofire_nc_`re'_`co'-COAL_AMPEREsec_woCCS >0
-	replace COAL_SA3 _`re'_`co'=0 if COAL_gen -COAL_converted_wCCS`re'_`co'-BIOMASS_cofire_nc_`re'_`co'-COAL_AMPEREsec_woCCS <=0
+	gen COAL_SA3_`re'_`co'=COAL_gen -COAL_converted_wCCS`re'_`co'-BIOMASS_cofire_nc_`re'_`co'-COAL_AMPEREsec_woCCS if COAL_gen -COAL_converted_wCCS`re'_`co'-BIOMASS_cofire_nc_`re'_`co'-COAL_AMPEREsec_woCCS >0
+	replace COAL_SA3_`re'_`co'=0 if COAL_gen -COAL_converted_wCCS`re'_`co'-BIOMASS_cofire_nc_`re'_`co'-COAL_AMPEREsec_woCCS <=0
 
 ** Generate all fossil fuel stranded assets annually 
-	gen ALL_SA3 _`re'_`co'=COAL_SA2 _`re'_`co'+GAS_SA2_`re'+OIL_SA2_`re'
+	gen ALL_SA3_`re'_`co'=COAL_SA2_`re'_`co'+GAS_SA2_`re'+OIL_SA2_`re'
 
 * Sum up stranded assets from all years
 	bysort pathway_id: egen sum_ALL_SA2_`re'_`co'=sum(ALL_SA2_`re'_`co') 
