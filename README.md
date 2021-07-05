@@ -1,12 +1,8 @@
-# technologies-stranded-assets
-	
-The purpose of this file is to facilitate the reproducibility of this research. Scripts show the main steps in the analysis.
-
-Can plant conversions and abatement technologies prevent asset stranding in the power sector?
+# Can plant conversions and abatement technologies prevent asset stranding in the power sector?
 Yangsiyu Lu, Francois Cohen, Stephen Smith, Alexander Pfeiffer  
 Last updated: 2021-07-05
 
-Data input:
+# Data input:
 1) Plant-level data:
 Power plant data are compiled from:
 	(a) Global Coal Plant Tracker, publicly available at: https://endcoal.org/global-coal-plant-tracker/ ; 
@@ -19,4 +15,9 @@ As part of power plant data (WEPP) are license protected, we are not able to sha
 	a) AMPERE, publicly available at: https://tntcat.iiasa.ac.at/AMPEREDB/dsd?Action=htmlpage&page=about
 	b) IPCC SR1.5 scenarios data, publicly available at: https://data.ene.iiasa.ac.at/iamc-1.5c-explorer/
 	c) IEA Sustainable Development Scenarios regarding CCS, publicly available at: https://www.iea.org/reports/ccus-in-clean-energy-transitions/ccus-in-the-transition-to-net-zero-emissions
+	
+	
+# Questions:
+Should you have any questions, please contact Yangsiyu Lu at yangsiyu.lu@ouce.ox.ac.uk
+
 		
