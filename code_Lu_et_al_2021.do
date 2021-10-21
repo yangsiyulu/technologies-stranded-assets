@@ -1,7 +1,7 @@
 /* 
-Can plant conversions and abatement technologies prevent asset stranding in the power sector?
+Plant conversions and abatement technologies cannot prevent asset stranding in the power sector
 Yangsiyu Lu, Francois Cohen, Stephen Smith, Alexander Pfeiffer  
-Last updated: 2021-07-05
+Last updated: 2021-10-21
 
 Data input:
 1) Plant-level data:
@@ -126,43 +126,44 @@ The purpose of this file is to facilitate the reproducibility of this research. 
 	save "Stranded_assets_ready.dta", replace
 
 *************    Consider plant conversions  ******************
-
-	*---- SA1: Coal-to-gas (used in Fig. 3a)
+*---- SA1: Coal-to-gas (used in Figure 3a)
 		
 	use "AMPERE.dta", clear
 	set more off
 	sort region year
 	merge m:1 region year using "plant_database_gas_retrofit.dta", keepusing(COAL* GAS* OIL*) gen(matched) // "$use/plant_database_gas_retrofit.dta" is the power plant data prepared for gas retrofit, classified power generation into gas-suitable and non-suitable
 
-* OIL: calculate the same way as SA0
+	* OIL: calculate the same way as SA0
 	gen OIL_SA1 =(OIL_gen  - OIL_AMPEREsec_woCCS) if OIL_gen >=OIL_AMPEREsec_woCCS
 	replace OIL_SA1 =0 if OIL_gen <OIL_AMPEREsec_woCCS
 
-* COAL and GAS: 
+	* COAL and GAS: 
 	gen GAS_SA1 =(GAS_gen -GAS_AMPEREsec_woCCS) if GAS_gen  >= GAS_AMPEREsec_woCCS
 	replace  GAS_SA1 =0 if GAS_gen  < GAS_AMPEREsec_woCCS
 
-* Calculate how much extra from gas can be used for coal -- if there's no gas stranding
+	* Calculate how much extra from gas can be used for coal -- if there's no gas stranding
 	gen GAS_AMPEREsec_extra =GAS_AMPEREsec_woCCS-GAS_gen  if GAS_gen  < GAS_AMPEREsec_woCCS
 	replace GAS_AMPEREsec_extra =0 if GAS_gen  >= GAS_AMPEREsec_woCCS
 
 	local retrofit="0 5 20" // retrofit rate
 	foreach re of local retrofit{
-* Get the amount that could be converted
+	
+	* Get the amount that could be converted
 	gen COAL_conversion_`re'=COAL_gen1*`re'/100 if GAS_AMPEREsec_extra >COAL_gen1*`re'/100   //	suffix "gen1" stands for retrofit suitable, "gen0" stands for retrofit non-suitable
 	replace COAL_conversion_`re'=GAS_AMPEREsec_extra  if GAS_AMPEREsec_extra <=COAL_gen1*`re'/100
 
 	gen COAL_SA1_`re'=COAL_gen -COAL_conversion_`re'-COAL_AMPEREsec_woCCS if COAL_gen -COAL_conversion_`re'-COAL_AMPEREsec_woCCS>0
 	replace COAL_SA1_`re'=0 if COAL_gen -COAL_conversion_`re'-COAL_AMPEREsec_woCCS<=0
 
-* Generate all fossil fuel stranded assets annually 
+	* Generate all fossil fuel stranded assets annually 
 	gen ALL_SA1_`re'=COAL_SA1_`re'+GAS_SA1+OIL_SA1 
-* Sum up stranded assets from all years
+	
+	* Sum up stranded assets from all years
 	bysort pathway_id: egen sum_ALL_SA1_`re'=sum(ALL_SA1_`re') 
 	}
 	save  "Coal-to-gas.dta",replace
 
-	*---- SA2: CCS without biomass (used in Fig. 3b)
+*---- SA2: CCS without biomass (used in Figure 3b)
 	
 	use "AMPERE.dta", clear
 	set more off
@@ -174,7 +175,8 @@ The purpose of this file is to facilitate the reproducibility of this research. 
 
 	foreach re of local retrofit{
 	foreach x of local FFs {
-*  Get the amount that could be converted
+
+	*  Get the amount that could be converted
 	gen `x'_conversion_`re'=`x'_gen1*`re'/100 if `x'_AMPEREsec_wCCS>=`x'_gen1*`re'/100  //	suffix "gen1" stands for retrofit suitable, "gen0" stands for retrofit non-suitable
 	replace  `x'_conversion_`re'=`x'_AMPEREsec_wCC if `x'_AMPEREsec_wCCS<`x'_gen1*`re'/100 
 	gen `x'_SA2_`re'=(`x'_gen1+ `x'_gen0- `x'_conversion_`re'-`x'_AMPEREsec_woCCS) if (`x'_gen1+ `x'_gen0- `x'_conversion_`re'-`x'_AMPEREsec_woCCS)>0
@@ -188,50 +190,55 @@ The purpose of this file is to facilitate the reproducibility of this research. 
 
 	save "CCS_without_biomass.dta",replace
 
-	*---- SA3: CCS with biomass cofiring, used in Fig.3c & 3d
+*---- SA3: CCS with biomass cofiring, used in Figure 3c & 3d
 	
 	use "AMPERE_FF.dta", clear
 	set more off
 	sort region year
 	merge m:1 region year using "plant_database_CCS_retrofit.dta", keepusing(COAL* GAS* OIL* BIO*) gen(matched) //
 
-* GAS and OIL: assume same percent of CCS retrofit
+	* GAS and OIL: assume same percent of CCS retrofit
 	global retrofit" "0" "50" "100" "
 	local FFs="GAS OIL " // retrofit rate
 	foreach re in $retrofit	{
 	foreach x of local FFs {	
-* Get the conversion amount: should be smaller than convert suitable plants
+	
+	* Get the conversion amount: should be smaller than convert suitable plants
 	gen `x'_conversion_`re'=`x'_gen 1*`re'/100 if `x'_AMPEREsec_wCCS>=`x'_gen 1*`re'/100 
 	replace  `x'_conversion_`re'=`x'_AMPEREsec_wCC if `x'_AMPEREsec_wCCS<`x'_gen 1*`re'/100 
 	gen `x'_SA3 _`re'=(`x'_gen 1+ `x'_gen 0- `x'_conversion_`re'-`x'_AMPEREsec_woCCS) if (`x'_gen 1+ `x'_gen 0- `x'_conversion_`re'-`x'_AMPEREsec_woCCS)>0
 	replace `x'_SA3 _`re'=0 if (`x'_gen 1+ `x'_gen 0- `x'_conversion_`re'-`x'_AMPEREsec_woCCS)<=0
 	}
 	}
-* COAL:
+	* COAL:
 	global retrofit" "0" "50" "100" "
 	global cofiring "0 20 50 " // co-firing rate
-* How much coal is CCS converted?
+	
+	* How much coal is CCS converted?
 	gen x2=BIO_AMPEREsec_wCCS+COAL_AMPEREsec_wCCS		
 	foreach re in $retrofit	{
 	foreach co in $cofiring	{
 	gen x1_`re'_`co'=COAL_gen1*(`re'/100) 
 	gen x3_`re'_`co'=COAL_AMPEREsec_wCCS/(100-`co')*100
 	egen COAL_converted_wCCS`re'_`co'=rmin(x1_`re'_`co' x2 x3_`re'_`co')
-* How much coal is not converted?
+	
+	* How much coal is not converted?
 	gen COAL_nonconverted_`re'_`co'=COAL_gen-COAL_converted_wCCS`re'_`co'
-* How much biomass could co-fire in non CCS-converted coal plants?
+	
+	* How much biomass could co-fire in non CCS-converted coal plants?
 	gen BIO_AMPEREsec_extra=BIO_AMPEREsec_woCCS-BIO_gen  if BIO_AMPEREsec_woCCS-BIO_gen >0
 	replace BIO_AMPEREsec_extra =0 if BIO_AMPEREsec_woCCS-BIO_gen <=0
 	gen BIOMASS_cofire_nc_`re'_`co'=COAL_nonconverted_`re'_`co'*(`co'/100) if COAL_nonconverted_`re'_`co'*(`co'/100)<=BIO_AMPEREsec_extra 
 	replace BIOMASS_cofire_nc_`re'_`co'=BIO_AMPEREsec_extra  if COAL_nonconverted_`re'_`co'*(`co'/100)>BIO_AMPEREsec_extra  
-* Coal stranded assets
+
+	* Coal stranded assets
 	gen COAL_SA3_`re'_`co'=COAL_gen -COAL_converted_wCCS`re'_`co'-BIOMASS_cofire_nc_`re'_`co'-COAL_AMPEREsec_woCCS if COAL_gen -COAL_converted_wCCS`re'_`co'-BIOMASS_cofire_nc_`re'_`co'-COAL_AMPEREsec_woCCS >0
 	replace COAL_SA3_`re'_`co'=0 if COAL_gen -COAL_converted_wCCS`re'_`co'-BIOMASS_cofire_nc_`re'_`co'-COAL_AMPEREsec_woCCS <=0
 
-** Generate all fossil fuel stranded assets annually 
+	** Generate all fossil fuel stranded assets annually 
 	gen ALL_SA3_`re'_`co'=COAL_SA2_`re'_`co'+GAS_SA2_`re'+OIL_SA2_`re'
 
-* Sum up stranded assets from all years
+	* Sum up stranded assets from all years
 	bysort pathway_id: egen sum_ALL_SA2_`re'_`co'=sum(ALL_SA2_`re'_`co') 
 	}
 	}
