@@ -1,4 +1,4 @@
-# plant conversions and abatement technologies cannot prevent asset stranding in the power sector
+# Plant conversions and abatement technologies cannot prevent asset stranding in the power sector
 Yangsiyu Lu, Francois Cohen, Stephen Smith, Alexander Pfeiffer  
 Last updated: 2021-07-05
 
